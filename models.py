@@ -1,3 +1,4 @@
+import os
 import json
 import multiprocessing
 import sqlite3
@@ -8,7 +9,6 @@ import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
 import time
-import numpy as np
 import asyncio
 
 
@@ -20,6 +20,7 @@ def load_settings(file_path: str = "settings.json"):
 # Глобальные переменные
 camera_proc = None
 camera_running = False
+file_path = os.path.join("static", "images")
 
 # Выбираем видеокамеру
 camera = cv2.VideoCapture(0)
@@ -92,18 +93,28 @@ def camera_process() -> None:
     global camera, camera_running, camera_proc
 
     detection_start_time = time.time()
+    fase_detected = False
 
     while camera_running:
         success, frame = camera.read()
         if not success:
             break
 
-        if fase_detect(frame=frame):
-            print("УСПЕХ")
+        if fase_detect(frame):
+            if not fase_detected:
+                detection_start_time = time.time()
+                fase_detected = True
+            else:
+                if time.time() - detection_start_time >= 5:
+                    detection_start_time = time.time()
+                    image_name = datetime.now().strftime("%Y%m%d_%H%M%S.jpg")
+                    cv2.imwrite(f"{file_path}/{image_name}", frame)
+                    connect = get_connection()
+                    save_image_to_db(conn=connect, filename=image_name)
         else:
-            print("неудача")
-        print("\n\n\n")
-        time.sleep(1)
+            fase_detected = False
+
+        time.sleep(0.1)
 
 
 def ggg():
@@ -111,4 +122,5 @@ def ggg():
 
 
 camera_running = True
+create_table(conn=get_connection())
 ggg()
