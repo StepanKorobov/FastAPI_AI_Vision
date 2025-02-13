@@ -8,6 +8,7 @@ from models import (
     get_connection,
     create_table,
     camera_process,
+    get_all_images_from_db,
 )
 
 camera_run = False
@@ -59,10 +60,11 @@ async def events():
     pass
 
 
-@app.get("humans")
-async def get_humans():
-    pass
-
+@app.get("/humans")
+async def get_humans(start_date, end_date):
+    conn = get_connection()
+    images = get_all_images_from_db(conn=conn, start_date=start_date, end_date=end_date)
+    return JSONResponse({"images": images})
 
 @app.get("/")
 async def index():
