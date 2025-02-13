@@ -2,15 +2,15 @@ import json
 import sqlite3
 import time
 from datetime import datetime
-from sqlite3 import Connection, Error
-from typing import List, Dict
-from numpy import ndarray
 from multiprocessing.synchronize import Event
+from sqlite3 import Connection, Error
+from typing import Dict, List
 
 import cv2
 import mediapipe as mp
 from mediapipe.tasks import python
 from mediapipe.tasks.python import vision
+from numpy import ndarray
 
 
 def load_settings(file_path: str = "settings.json") -> Dict[str, Dict[str, str]]:
@@ -23,7 +23,7 @@ def load_settings(file_path: str = "settings.json") -> Dict[str, Dict[str, str]]
     :rtype: Dict[str, Dict[str, str]]
     """
 
-    with open(file_path, 'r', encoding="utf-8") as file:
+    with open(file_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
@@ -36,7 +36,9 @@ camera: cv2.VideoCapture = cv2.VideoCapture(0)
 camera_region_detect: dict = load_settings()["frame"]
 
 # Настройка распознавания лица
-base_options = python.BaseOptions(model_asset_path='blaze_face_short_range.tflite', )
+base_options = python.BaseOptions(
+    model_asset_path="blaze_face_short_range.tflite",
+)
 options = vision.FaceDetectorOptions(base_options=base_options)
 detector = vision.FaceDetector.create_from_options(options)
 mp_drawing = mp.solutions.drawing_utils
