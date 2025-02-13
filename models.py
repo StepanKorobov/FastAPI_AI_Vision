@@ -1,6 +1,5 @@
 import os
 import json
-import multiprocessing
 import sqlite3
 from datetime import datetime
 from sqlite3 import Connection, Error
@@ -18,8 +17,6 @@ def load_settings(file_path: str = "settings.json"):
 
 
 # Глобальные переменные
-camera_proc = None
-camera_running = False
 file_path = os.path.join("static", "images")
 
 # Выбираем видеокамеру
@@ -89,13 +86,13 @@ def fase_detect(frame):
     return False
 
 
-def camera_process() -> None:
-    global camera, camera_running, camera_proc
+def camera_process(stop_event) -> None:
+    global camera
 
     detection_start_time = time.time()
     fase_detected = False
 
-    while camera_running:
+    while not stop_event.is_set():
         success, frame = camera.read()
         if not success:
             break
@@ -116,11 +113,8 @@ def camera_process() -> None:
 
         time.sleep(0.1)
 
-
-def ggg():
-    process = multiprocessing.Process(target=camera_process())
-
-
-camera_running = True
-create_table(conn=get_connection())
-ggg()
+# def ggg():
+#     process = multiprocessing.Process(target=camera_process())
+#
+#
+# ggg()
