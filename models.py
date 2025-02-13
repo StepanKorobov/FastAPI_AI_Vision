@@ -66,8 +66,20 @@ def save_image_to_db(conn: Connection, filename: str) -> None:
         print(exc, type(exc))
 
 
-# def get_all_images_from_db(conn: Connection, start_data, end_data) -> list:
-#     querry
+def get_all_images_from_db(conn: Connection, start_data, end_data) -> List[str]:
+    query = """SELECT filename FROM humans WHERE created_at BETWEEN ? AND ?"""
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query, (start_data, end_data))
+        images = cursor.fetchall()
+        if images:
+            images: List[str] = [f"{file_path}/{i_image[0]}" for i_image in images]
+            return images
+    except Error as exc:
+        print(exc, type(exc))
+
+    return ["Not_files"]
 
 
 def get_latest_image_from_db(conn: Connection):
