@@ -2,6 +2,7 @@ import os
 import json
 import sqlite3
 from datetime import datetime
+from typing import List, Dict
 from sqlite3 import Connection, Error
 import cv2
 import mediapipe as mp
@@ -53,7 +54,9 @@ def create_table(conn: Connection) -> None:
 
 
 def save_image_to_db(conn: Connection, filename: str) -> None:
-    query: str = """INSERT INTO humans (filename) VALUES (?)"""
+    query: str = """
+    INSERT INTO humans (filename) VALUES (?)
+    """
 
     try:
         cursor = conn.cursor()
@@ -61,6 +64,25 @@ def save_image_to_db(conn: Connection, filename: str) -> None:
         conn.commit()
     except Error as exc:
         print(exc, type(exc))
+
+
+# def get_all_images_from_db(conn: Connection, start_data, end_data) -> list:
+#     querry
+
+
+def get_latest_image_from_db(conn: Connection):
+    query: str = """SELECT filename FROM humans ORDER BY create_at DESC LIMIT 1"""
+
+    try:
+        cursor = conn.cursor()
+        cursor.execute(query)
+        image = cursor.fetchone()
+        if image:
+            return {"file_name": image.image[0]}
+    except Error as exc:
+        print(exc, type(exc))
+
+    return None
 
 
 def fase_detect(frame):
@@ -112,9 +134,3 @@ def camera_process(stop_event) -> None:
             fase_detected = False
 
         time.sleep(0.1)
-
-# def ggg():
-#     process = multiprocessing.Process(target=camera_process())
-#
-#
-# ggg()
