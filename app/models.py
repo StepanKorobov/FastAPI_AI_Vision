@@ -169,11 +169,8 @@ def get_all_images_from_db(
         if images:
             # Создаём список ссылок к файлам
 
-            # Предположим, что на проекте будет frontend для обработки данных ссылок
-            # Он автоматически будет создавать полный путь
-            # Например: http://127.0.0.1:8000/static/images/20250215_010101.jpg
-            # Делать запрос на backend и получать все фото
-            images: List[str] = [f"images/{i_image[0]}" for i_image in images]
+            # Создаём список ссылок на фото
+            images: List[str] = [f"http://127.0.0.1:5000/static/images/{i_image[0]}" for i_image in images]
             # Возвращаем список ссылок на файлы
             return images
     except Error as exc:
