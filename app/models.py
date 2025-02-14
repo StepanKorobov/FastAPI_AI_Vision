@@ -1,5 +1,6 @@
 import asyncio
 import json
+import os
 import sqlite3
 import time
 from datetime import datetime
@@ -14,17 +15,19 @@ from mediapipe.tasks.python import vision
 from numpy import ndarray
 
 
-def load_settings(file_path: str = "settings.json") -> Dict[str, Dict[str, str]]:
+def load_settings(file_name: str = "settings.json") -> Dict[str, Dict[str, str]]:
     """
     Функция загрузки настроек области для распознавания лица в кадре
 
-    :param file_path: Путь к файлу с настройками
-    :type file_path: str
+    :param file_name: Имя файла с настройками
+    :type file_name: str
     :return: Ключ с набором параметров
     :rtype: Dict[str, Dict[str, str]]
     """
+    app_path = os.path.abspath(os.path.dirname(__file__))
+    settings_path = os.path.abspath(os.path.join(app_path, "..", file_name))
 
-    with open(file_path, "r", encoding="utf-8") as file:
+    with open(settings_path, "r", encoding="utf-8") as file:
         return json.load(file)
 
 
@@ -43,6 +46,26 @@ base_options = python.BaseOptions(
 options = vision.FaceDetectorOptions(base_options=base_options)
 detector = vision.FaceDetector.create_from_options(options)
 mp_drawing = mp.solutions.drawing_utils
+
+
+def check_static() -> None:
+    """
+    Функция для проверки существования папок static и images
+
+    :return: Ничего не возвращает
+    :rtype: None
+    """
+
+    # Путь к приложению
+    app_path = os.path.abspath(os.path.dirname(__file__))
+
+    # Если папки не существует, создаём
+    if not os.path.exists(os.path.join(app_path, "static")):
+        os.mkdir(os.path.join(app_path, "static"))
+
+    # Если папки не существует, создаём
+    if not os.path.exists(os.path.join(app_path, "static", "images")):
+        os.mkdir(os.path.join(app_path, "static", "images"))
 
 
 def get_connection() -> Connection:
@@ -118,7 +141,7 @@ def save_image_to_db(conn: Connection, filename: str) -> None:
 
 
 def get_all_images_from_db(
-    conn: Connection, start_date: str, end_date: str
+        conn: Connection, start_date: str, end_date: str
 ) -> List[str]:
     """
     Функция получения всех путей к файлам из БД по фильтру дат

@@ -14,6 +14,7 @@ from models import (
     get_all_images_from_db,
     get_connection,
     image_event_generator,
+    check_static,
 )
 from shemas import Camera, Humans
 
@@ -49,6 +50,8 @@ async def lifespan(app: FastAPI):
     conn = get_connection()
     # Создаём таблицы в БД
     create_table(conn=conn)
+    # Проверяем созданы ли папки, если нет - создаём
+    check_static()
 
     yield
 
@@ -145,22 +148,22 @@ async def camera_stop():
     description="Эндпоинт для получения списка ссылок на все фото из БД.",
 )
 async def get_humans(
-    start_date: Annotated[
-        str | None,
-        Query(
-            ...,
-            pattern=r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b",
-            description="Дата и время в формате YYYY-MM-DD HH:MM:SS",
-        ),
-    ] = "2025-01-01 00:00:00",
-    end_date: Annotated[
-        str | None,
-        Query(
-            ...,
-            pattern=r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b",
-            description="Дата и время в формате YYYY-MM-DD HH:MM:SS",
-        ),
-    ] = "2025-01-01 00:00:00",
+        start_date: Annotated[
+            str | None,
+            Query(
+                ...,
+                pattern=r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b",
+                description="Дата и время в формате YYYY-MM-DD HH:MM:SS",
+            ),
+        ] = "2025-01-01 00:00:00",
+        end_date: Annotated[
+            str | None,
+            Query(
+                ...,
+                pattern=r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b",
+                description="Дата и время в формате YYYY-MM-DD HH:MM:SS",
+            ),
+        ] = "2025-01-01 00:00:00",
 ):
     """
     Эндпоинт для получения списка ссылок на все фото из БД.
