@@ -282,24 +282,32 @@ def camera_process(stop_event: Event) -> None:
 
 async def image_event_generator() -> dict:
     """
-    Корутина для отправки события после добавления фото
+    Корутина - генератор для отправки события после добавления фото
 
     :return: Словарь с данными
     :rtype: dict
     """
+
+    # Получаем последнее фото из БД
     current_image = get_latest_image_from_db(conn=get_connection())
 
     while True:
+        # Получаем последнее фото из БД
         new_image = get_latest_image_from_db(conn=get_connection())
 
+        # Если новое фото отличается от текущего
         if new_image != current_image:
+            # Обновляем текущее фото
             current_image = new_image
+            # Данные для ивента
             data = {
                 "event": "new_image",
                 "id": None,
                 "retry": 15000,
                 "data": f"images/{new_image['file_name']}",
             }
+            # возвращаем ивент
             yield data
 
+        # Используем асинхронный sleep, что бы не блокировать исполнение кода
         await asyncio.sleep(1)
