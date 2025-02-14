@@ -1,8 +1,8 @@
 from contextlib import asynccontextmanager
 from multiprocessing import Event, Process
-from typing import List
+from typing import Annotated, List
 
-from fastapi import FastAPI, Request, status
+from fastapi import FastAPI, Query, Request, status
 from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from sse_starlette.sse import EventSourceResponse
@@ -15,7 +15,7 @@ from models import (
     get_connection,
     image_event_generator,
 )
-from shemas import Camera, Date, Humans
+from shemas import Camera, Humans
 
 # Словарь с тегами, нужен для отображения описания тегов в /docs
 tags_metadata = [
@@ -137,23 +137,41 @@ async def camera_stop():
     )
 
 
-@app.post(
+@app.get(
     path="/humans",
     response_model=Humans,
     tags=["images"],
     summary="Получить список всех фото",
     description="Эндпоинт для получения списка ссылок на все фото из БД.",
 )
-async def get_humans(date: Date):
+async def get_humans(
+    start_date: Annotated[
+        str | None,
+        Query(
+            ...,
+            pattern=r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b",
+            description="Дата и время в формате YYYY-MM-DD HH:MM:SS",
+        ),
+    ] = "2025-01-01 00:00:00",
+    end_date: Annotated[
+        str | None,
+        Query(
+            ...,
+            pattern=r"\b\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}\b",
+            description="Дата и время в формате YYYY-MM-DD HH:MM:SS",
+        ),
+    ] = "2025-01-01 00:00:00",
+):
     """
     Эндпоинт для получения списка ссылок на все фото из БД.
 
-    :param date: Получаем json данные start_date и end_date для поиска фото в БД
-    :type date: Date
+    :param start_date: Дата от которой вести поиск
+    :param end_date: Дата по которую вести поиск
+    :return:
     """
     conn = get_connection()
     images: List[str] = get_all_images_from_db(
-        conn=conn, start_date=date.start_date, end_date=date.end_date
+        conn=conn, start_date=start_date, end_date=end_date
     )
 
     return JSONResponse({"images": images})
