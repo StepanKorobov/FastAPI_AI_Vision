@@ -117,7 +117,9 @@ def save_image_to_db(conn: Connection, filename: str) -> None:
         print(exc, type(exc))
 
 
-def get_all_images_from_db(conn: Connection, start_date, end_date) -> List[str]:
+def get_all_images_from_db(
+    conn: Connection, start_date: datetime, end_date: datetime
+) -> List[str]:
     """
     Функция получения всех путей к файлам из БД по фильтру дат
 
