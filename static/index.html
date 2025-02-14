@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Лента обнаруженных людей</title>
+</head>
+<body>
+    <h1>Обнаруженные люди</h1>
+    <div id="image-container">
+    </div>
+
+    <script>
+        const eventSource = new EventSource('/events');
+
+        eventSource.addEventListener('new_image', function(event) {
+            const imageUrl = "static/" + event.data;
+            const img = document.createElement('img');
+            img.src = imageUrl;
+            img.width = 200;
+
+            const container = document.getElementById('image-container');
+            container.insertBefore(img, container.firstChild);
+        });
+
+        eventSource.onerror = function(error) {
+            console.error("SSE error:", error);
+            eventSource.close();
+        };
+    </script>
+</body>
+</html>
