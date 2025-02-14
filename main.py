@@ -2,7 +2,7 @@ from multiprocessing import Process, Event
 from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, status, Request
-from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.responses import JSONResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.responses import FileResponse
 from sse_starlette.sse import EventSourceResponse
@@ -14,6 +14,22 @@ from models import (
     get_all_images_from_db,
     image_event_generator,
 )
+from shemas import Date
+
+tags_metadata = [
+    {
+        "name": "camera",
+        "description": "Набор методов для управления камерой.",
+    },
+    {
+        "name": "images",
+        "description": "Набор методов для работы с изображениями.",
+    },
+    {
+        "name": "static",
+        "description": "Набор методов для работы со статическими файлами."
+    },
+]
 
 camera_run = False
 stop_event = None
@@ -27,10 +43,21 @@ async def lifespan(app: FastAPI):
     yield
 
 
-app = FastAPI(lifespan=lifespan)
+app = FastAPI(
+    title="AI Vision",
+    version="1.0.0",
+    description="Приложение для отслеживания лица человека в определённой области на камере.",
+    openapi_tags=tags_metadata,
+    lifespan=lifespan,
+)
 
 
-@app.get("/start")
+@app.get(
+    path="/start",
+    tags=["camera"],
+    summary="Включить камеру",
+    description="Эндпоинт для включения камеры."
+)
 async def camera_start():
     global camera_run, camera_proc, stop_event
 
@@ -45,7 +72,12 @@ async def camera_start():
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "The camera is already running"})
 
 
-@app.get("/stop")
+@app.get(
+    path="/stop",
+    tags=["camera"],
+    summary="Выключить камеру",
+    description="Эндпоинт для выключения камеры."
+)
 async def camera_stop():
     global camera_run, camera_proc, stop_event
 
@@ -59,21 +91,38 @@ async def camera_stop():
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "the camera is already turned off"})
 
 
-@app.get("/events")
+@app.post(
+    path="/humans",
+    tags=["images"],
+    summary="Получить список всех фото",
+    description="Эндпоинт для получения списка ссылок на все фото из БД."
+)
+async def get_humans(date: Date):
+    conn = get_connection()
+    images = get_all_images_from_db(conn=conn, start_date=date.start_date, end_date=date.end_date)
+
+    return JSONResponse({"images": images})
+
+
+@app.get(
+    path="/events",
+    tags=["static"],
+    summary="Ивент",
+    description="Эндпоинт - ивент, отправляет на frontend ссылку на новое фото, если камера распознала лицо, и оно находилось в кадре 5 или более секунд"
+)
 async def event_stream(request: Request):
     return EventSourceResponse(image_event_generator())
 
 
-@app.get("/humans")
-async def get_humans(start_date, end_date):
-    conn = get_connection()
-    images = get_all_images_from_db(conn=conn, start_date=start_date, end_date=end_date)
-    return JSONResponse({"images": images})
+# Подключаем статику
+app.mount("/static", StaticFiles(directory="static"), name="static")
 
 
-# app.mount("/static", StaticFiles(directory="static"), name="static")
-#
-#
-# @app.get("/")
-# async def read_root():
-#     return FileResponse("static/index.html")
+@app.get(
+    path="/",
+    tags=["static"],
+    summary="Главная страница",
+    description="Главная страница, отдаёт index.html, на котором добавляются изображения с камеры."
+)
+async def read_root():
+    return FileResponse("static/index.html")
