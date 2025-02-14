@@ -1,3 +1,4 @@
+import asyncio
 import json
 import sqlite3
 import time
@@ -142,7 +143,12 @@ def get_all_images_from_db(conn: Connection, start_date, end_date) -> List[str]:
         images = cursor.fetchall()
         if images:
             # Создаём список ссылок к файлам
-            images: List[str] = [f"{file_path}/{i_image[0]}" for i_image in images]
+
+            # Предположим, что на проекте будет frontend для обработки данных ссылок
+            # Он автоматически будет создавать полный путь
+            # Например: http://127.0.0.1:8000/static/images/20250215_010101.jpg
+            # Делать запрос на backend и получать все фото
+            images: List[str] = [f"images/{i_image[0]}" for i_image in images]
             # Возвращаем список ссылок на файлы
             return images
     except Error as exc:
@@ -164,7 +170,7 @@ def get_latest_image_from_db(conn: Connection) -> Dict[str, str] | None:
     """
 
     # Запрос для БД
-    query: str = """SELECT filename FROM humans ORDER BY create_at DESC LIMIT 1"""
+    query: str = """SELECT filename FROM humans ORDER BY created_at DESC LIMIT 1"""
 
     try:
         # Создаём курсор для выполнения запроса в БД
@@ -175,7 +181,7 @@ def get_latest_image_from_db(conn: Connection) -> Dict[str, str] | None:
         image = cursor.fetchone()
         if image:
             # Возвращаем имя последнего файла
-            return {"file_name": image.image[0]}
+            return {"file_name": image[0]}
     except Error as exc:
         print(exc, type(exc))
 
@@ -272,3 +278,28 @@ def camera_process(stop_event: Event) -> None:
         # Интервал между распознаванием лиц в кадре
         # Так как это отдельный процесс, можно использовать обычный time sleep
         time.sleep(0.1)
+
+
+async def image_event_generator() -> dict:
+    """
+    Корутина для отправки события после добавления фото
+
+    :return: Словарь с данными
+    :rtype: dict
+    """
+    current_image = get_latest_image_from_db(conn=get_connection())
+
+    while True:
+        new_image = get_latest_image_from_db(conn=get_connection())
+
+        if new_image != current_image:
+            current_image = new_image
+            data = {
+                "event": "new_image",
+                "id": None,
+                "retry": 15000,
+                "data": f"images/{new_image['file_name']}",
+            }
+            yield data
+
+        await asyncio.sleep(1)

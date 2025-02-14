@@ -1,14 +1,18 @@
 from multiprocessing import Process, Event
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI, status
-from fastapi.responses import JSONResponse
+from fastapi import FastAPI, status, Request
+from fastapi.responses import JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
+from starlette.responses import FileResponse
+from sse_starlette.sse import EventSourceResponse
 
 from models import (
     get_connection,
     create_table,
     camera_process,
     get_all_images_from_db,
+    image_event_generator,
 )
 
 camera_run = False
@@ -55,9 +59,9 @@ async def camera_stop():
     return JSONResponse(status_code=status.HTTP_200_OK, content={"message": "the camera is already turned off"})
 
 
-@app.post("/events")
-async def events():
-    pass
+@app.get("/events")
+async def event_stream(request: Request):
+    return EventSourceResponse(image_event_generator())
 
 
 @app.get("/humans")
@@ -66,6 +70,10 @@ async def get_humans(start_date, end_date):
     images = get_all_images_from_db(conn=conn, start_date=start_date, end_date=end_date)
     return JSONResponse({"images": images})
 
-@app.get("/")
-async def index():
-    pass
+
+# app.mount("/static", StaticFiles(directory="static"), name="static")
+#
+#
+# @app.get("/")
+# async def read_root():
+#     return FileResponse("static/index.html")
